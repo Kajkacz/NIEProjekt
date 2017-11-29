@@ -10,18 +10,39 @@ public class Enemy : MonoBehaviour {
 	public float speed = 1;
 	public float turnSpeed = 90;
 
+	public Light coneOfSight;
+	public float ViewDistance;
+	float viewAngle;
+
+	GameObject player;
+
+
 	void Start() 
 	{
+		coneOfSight.color = Color.green;
 		Vector3[] waypoints = new Vector3[pathHolder.childCount];
 		for (int i = 0; i < waypoints.Length; i++)
 			waypoints[i] = pathHolder.GetChild(i).position;
 
+		viewAngle = coneOfSight.spotAngle;
+
+		player = GameObject.FindGameObjectWithTag ("Player");
+
 		StartCoroutine (followPath (waypoints));
+	}
+
+	void Update()
+	{
+		if (Spotted ())
+			coneOfSight.color = Color.red;
+		else
+			coneOfSight.color = Color.green;
 	}
 
 	IEnumerator followPath(Vector3[] waypoints)
 	{
 		transform.position = waypoints [0];
+		transform.forward = waypoints [1];
 		int targetWaypointIndex = 1;
 		bool reverse = false;
 		Vector3 targetWaypoint = waypoints[targetWaypointIndex];
@@ -71,6 +92,21 @@ public class Enemy : MonoBehaviour {
 		}
 		if (isClosedPath)
 			Gizmos.DrawLine (previousPosition, startPosition);
+		Gizmos.color = Color.magenta;
+		Gizmos.DrawRay (new Vector3(transform.position.x, 0, transform.position.z), transform.forward * ViewDistance);
+	}
+
+	bool Spotted()
+	{
+		if (Vector3.Distance (transform.position, player.transform.position) > ViewDistance)
+			return false;
+		if (Vector3.Angle (transform.forward, (player.transform.position-transform.position)) > (viewAngle)/2)
+			return false;
+		RaycastHit hitInfo;
+		if(Physics.Raycast (transform.position + transform.up, (player.transform.position - transform.position), out hitInfo, ViewDistance))
+			if(hitInfo.collider.tag == "Player")
+				return true;
+		return false;
 	}
 
 }
