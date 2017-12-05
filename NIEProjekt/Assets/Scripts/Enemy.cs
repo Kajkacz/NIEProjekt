@@ -32,8 +32,8 @@ public class Enemy : MonoBehaviour {
 	}
 
 	void Update()
-	{
-		if (Spotted ())
+    {
+        if (Spotted ())
 			coneOfSight.color = Color.red;
 		else
 			coneOfSight.color = Color.green;
