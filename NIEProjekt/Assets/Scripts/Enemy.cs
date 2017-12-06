@@ -12,12 +12,14 @@ public class Enemy : MonoBehaviour {
 
 	public Light coneOfSight;
 	public float ViewDistance;
-	float viewAngle;
+    public AudioClip found;
+    float viewAngle;
 
 	GameObject player;
+    private AudioSource source;
+    static float timeStamp;
 
-
-	void Start() 
+    void Start() 
 	{
 		coneOfSight.color = Color.green;
 		Vector3[] waypoints = new Vector3[pathHolder.childCount];
@@ -31,12 +33,25 @@ public class Enemy : MonoBehaviour {
 		StartCoroutine (followPath (waypoints));
 	}
 
-	void Update()
+    void Awake()
     {
-        if (Spotted ())
-			coneOfSight.color = Color.red;
-		else
-			coneOfSight.color = Color.green;
+        source = GetComponent<AudioSource>();
+    }
+
+
+    void Update()
+    {
+        if (Spotted())
+        {
+            coneOfSight.color = Color.red;
+            if (timeStamp <= Time.time)
+            {
+                source.PlayOneShot(found, 1F);
+                timeStamp = Time.time + found.length;
+            }
+        }
+        else
+            coneOfSight.color = Color.green;
 	}
 
 	IEnumerator followPath(Vector3[] waypoints)

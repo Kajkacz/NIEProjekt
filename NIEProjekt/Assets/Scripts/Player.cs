@@ -2,19 +2,36 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(CharacterController))]
 public class Player : MonoBehaviour {
 
     public float speed = 10f;
+    public AudioClip gameplayMusic;
+
+    private CharacterController controller;
     private float jumpForce = 8f;
     private float gravity = 30f;
     private Vector3 moveDir = Vector3.zero;
-	
-	void Start () {
-		
-	}
+     
 
-	void Update () {
-        CharacterController controller = gameObject.GetComponent<CharacterController> ();
+    private AudioSource source;
+
+
+    void Start()
+    {
+       controller = gameObject.GetComponent<CharacterController>();
+    }
+
+    void Awake()
+    {
+        source = GetComponent<AudioSource>();
+        source.PlayOneShot(gameplayMusic, 1F);
+        
+    }
+
+
+    void Update () {
+        
 
         if (controller.isGrounded)
         {
@@ -33,6 +50,18 @@ public class Player : MonoBehaviour {
         }
             moveDir.y -= gravity * Time.deltaTime;
             controller.Move(moveDir * Time.deltaTime);
-        
-	}
+
+
+        if (Input.GetKey("escape"))
+            Application.Quit();
+
+    }
+
+    void OnTriggerEnter(Collider col)
+    {
+        if (col.gameObject.tag == "Finish")
+        {
+            Application.Quit();
+        }
+    }
 }
