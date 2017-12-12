@@ -15,7 +15,7 @@ public class Enemy : MonoBehaviour {
     public AudioClip found;
     float viewAngle;
 
-	GameObject player;
+	private GameObject player;
     private AudioSource source;
     static float timeStamp;
 
@@ -29,7 +29,7 @@ public class Enemy : MonoBehaviour {
 		viewAngle = coneOfSight.spotAngle;
 
 		player = GameObject.FindGameObjectWithTag ("Player");
-
+        
 		StartCoroutine (followPath (waypoints));
 	}
 
@@ -65,9 +65,9 @@ public class Enemy : MonoBehaviour {
 
 		while (true) 
 		{
-			transform.position = Vector3.MoveTowards (transform.position, targetWaypoint, speed * Time.deltaTime);
+            transform.position = Vector3.MoveTowards (transform.position, targetWaypoint, speed * Time.deltaTime);
 			if (transform.position == targetWaypoint) {
-				if (isClosedPath)
+                if (isClosedPath)
 					targetWaypointIndex = (targetWaypointIndex + 1) % waypoints.Length;
 				else if (targetWaypointIndex == waypoints.Length - 1 || targetWaypointIndex == 0)
 					reverse =! reverse;
@@ -76,6 +76,7 @@ public class Enemy : MonoBehaviour {
 				else
 					targetWaypointIndex--;
 				targetWaypoint = waypoints [targetWaypointIndex];
+               
 				yield return new WaitForSeconds (waitTime);
 				yield return StartCoroutine (TurnToWaypoint (targetWaypoint));
 			} yield return null;
