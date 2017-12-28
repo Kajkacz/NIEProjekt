@@ -1,15 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 public class EnemyWithTrail : MonoBehaviour
 {
-
+	
     public Transform pathHolder;
     public bool isClosedPath;
-    public float waitTime = 0.3f;
-    public float speed = 1;
-    public float turnSpeed = 90;
+	public float waitTime;
+	public float followTime;
 
     public Light coneOfSight;
     public float ViewDistance;
@@ -17,22 +18,37 @@ public class EnemyWithTrail : MonoBehaviour
     float viewAngle;
 
     private GameObject player;
+	private Vector3[] waypoints;
+	private int destinationPoint;
+	private NavMeshAgent agent;
+	private bool reverse = false;
     private ParticleSystem particle;
     private AudioSource source;
-    static float timeStamp;
-
+    static float audioTimeStamp;
+	private float oldSpeed;
+	private enum state {PATROL, ATTACK};
+	private state currentState;
     void Start()
     {
+		currentState = state.PATROL;
         coneOfSight.color = Color.green;
-        Vector3[] waypoints = new Vector3[pathHolder.childCount];
+		viewAngle = coneOfSight.spotAngle;
+
+        waypoints = new Vector3[pathHolder.childCount];
         for (int i = 0; i < waypoints.Length; i++)
             waypoints[i] = pathHolder.GetChild(i).position;
 
-        viewAngle = coneOfSight.spotAngle;
-
         player = GameObject.FindGameObjectWithTag("Player");
         particle = GetComponent<ParticleSystem>();
-        StartCoroutine(followPath(waypoints));
+
+		agent = GetComponent<NavMeshAgent>();
+		agent.autoBraking = false;
+		oldSpeed = agent.speed;
+
+		transform.position = waypoints[0];
+		transform.forward = waypoints[1];
+		destinationPoint = 1;
+
     }
 
     void Awake()
@@ -42,64 +58,72 @@ public class EnemyWithTrail : MonoBehaviour
 
 
     void Update()
-    {
-        if (Spotted())
-        {
-            coneOfSight.color = Color.red;
-            if (timeStamp <= Time.time)
-            {
-                source.PlayOneShot(found, 1F);
-                timeStamp = Time.time + found.length;
-            }
-        }
-        else
-            coneOfSight.color = Color.green;
+	{
+		switch(currentState)
+		{
+		case state.PATROL:
+			{
+				if (Spotted ()) {
+					currentState = state.ATTACK;
+					agent.destination = player.transform.position;
+					agent.speed = oldSpeed * 5;
+					agent.angularSpeed = 360;
+					coneOfSight.color = Color.red;
+					if (audioTimeStamp <= Time.time) {
+						source.PlayOneShot (found, 1F);
+						audioTimeStamp = Time.time + found.length;
+					}
+				} else if (!agent.pathPending && agent.remainingDistance < 0.5f) {
+					patrol ();
+					agent.speed = oldSpeed;
+				}
+				else
+					agent.speed = oldSpeed;
+				break;
+			}
+		case state.ATTACK:
+			{
+				agent.destination = player.transform.position;
+				if (!agent.pathPending)
+				{
+					if (agent.remainingDistance <= agent.stoppingDistance)
+					{
+							SceneManager.LoadScene (SceneManager.GetActiveScene().name);
+
+					}
+				}
+				break;
+			}
+		/*if (Spotted ()) {
+			coneOfSight.color = Color.red;
+			if (audioTimeStamp <= Time.time) {
+				source.PlayOneShot (found, 1F);
+				audioTimeStamp = Time.time + found.length + followTime;
+			}
+			agent.destination = player.transform.position;
+			agent.speed = oldSpeed * 10;
+		} else if (!agent.pathPending && agent.remainingDistance < 0.5f) {
+			patrol ();
+			agent.speed = oldSpeed;
+			coneOfSight.color = Color.green;
+		} /*else {
+			agent.speed = oldSpeed;
+			coneOfSight.color = Color.green;*/
+
+		}
     }
 
-    IEnumerator followPath(Vector3[] waypoints)
-    {
-        transform.position = waypoints[0];
-        transform.forward = waypoints[1];
-        int targetWaypointIndex = 1;
-        bool reverse = false;
-        Vector3 targetWaypoint = waypoints[targetWaypointIndex];
-        transform.LookAt(targetWaypoint);
-
-        while (true)
-        {
-            if (particle.isStopped) particle.Play();
-            transform.position = Vector3.MoveTowards(transform.position, targetWaypoint, speed * Time.deltaTime);
-            if (transform.position == targetWaypoint)
-            {
-                if (isClosedPath)
-                    targetWaypointIndex = (targetWaypointIndex + 1) % waypoints.Length;
-                else if (targetWaypointIndex == waypoints.Length - 1 || targetWaypointIndex == 0)
-                    reverse = !reverse;
-                if (!reverse)
-                    targetWaypointIndex++;
-                else
-                    targetWaypointIndex--;
-                targetWaypoint = waypoints[targetWaypointIndex];
-                particle.Stop();
-                yield return new WaitForSeconds(waitTime);
-                yield return StartCoroutine(TurnToWaypoint(targetWaypoint));
-            }
-            yield return null;
-        }
-    }
-
-    IEnumerator TurnToWaypoint(Vector3 target)
-    {
-        Vector3 dirToTarget = (target - transform.position).normalized;
-        float targetAngle = 90 - Mathf.Atan2(dirToTarget.z, dirToTarget.x) * Mathf.Rad2Deg;
-
-        while (Mathf.Abs(Mathf.DeltaAngle(transform.eulerAngles.y, targetAngle)) > 0.05f)
-        {
-            float angle = Mathf.MoveTowardsAngle(transform.eulerAngles.y, targetAngle, turnSpeed * Time.deltaTime);
-            transform.eulerAngles = Vector3.up * angle;
-            yield return null;
-        }
-    }
+	void patrol(){
+		agent.destination = waypoints [destinationPoint];
+		if (isClosedPath)
+			destinationPoint = (destinationPoint + 1) % waypoints.Length;
+		else if (destinationPoint == waypoints.Length - 1 || destinationPoint == 0)
+			reverse = !reverse;
+		if (!reverse)
+			destinationPoint++;
+		else
+			destinationPoint--;
+	}		
 
     void OnDrawGizmos()
     {
@@ -130,5 +154,68 @@ public class EnemyWithTrail : MonoBehaviour
                 return true;
         return false;
     }
+
+	void OnTriggerEnter(Collider col)
+	{
+		if (col.gameObject.tag == "Sunlight")
+		{
+			if (currentState == state.ATTACK) {
+				agent.destination = waypoints [destinationPoint];
+			}
+		}
+	}
+
+	void OnTriggerExit(Collider col)
+	{
+		if (col.gameObject.tag == "Sunlight")
+		{
+			if (currentState == state.ATTACK) {
+				agent.destination = waypoints [destinationPoint];
+				currentState = state.PATROL;
+			}
+		}
+	}
+
+	IEnumerator followPath(Vector3[] waypoints, int targetWaypointIndex)
+	{
+		transform.position = waypoints [0];
+		transform.forward = waypoints [1];
+		bool reverse = false;
+		Vector3 targetWaypoint = waypoints[targetWaypointIndex];
+		transform.LookAt (targetWaypoint);
+
+		while (true) 
+		{
+			transform.position = Vector3.MoveTowards (transform.position, targetWaypoint, agent.speed * Time.deltaTime);
+			if (transform.position == targetWaypoint) {
+				if (isClosedPath)
+					targetWaypointIndex = (targetWaypointIndex + 1) % waypoints.Length;
+				else if (targetWaypointIndex == waypoints.Length - 1 || targetWaypointIndex == 0)
+					reverse =! reverse;
+				if (!reverse)
+					targetWaypointIndex++;
+				else
+					targetWaypointIndex--;
+				targetWaypoint = waypoints [targetWaypointIndex];
+
+				yield return new WaitForSeconds (waitTime);
+				yield return StartCoroutine (TurnToWaypoint (targetWaypoint));
+			} yield return null;
+		} 
+	}
+
+	IEnumerator TurnToWaypoint(Vector3 target)
+	{
+		Vector3 dirToTarget = (target - transform.position).normalized;
+		float targetAngle = 90 - Mathf.Atan2 (dirToTarget.z, dirToTarget.x) * Mathf.Rad2Deg;
+
+		while (Mathf.Abs(Mathf.DeltaAngle(transform.eulerAngles.y, targetAngle))>0.05f) 
+		{
+			float angle = Mathf.MoveTowardsAngle (transform.eulerAngles.y, targetAngle, agent.angularSpeed*Time.deltaTime);
+			transform.eulerAngles = Vector3.up * angle;
+			yield return null;
+		}
+	}
+
 
 }

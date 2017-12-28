@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(CharacterController))]
+//[RequireComponent(typeof(CharacterController))]
 public class Player : MonoBehaviour {
 
     public float speed = 10f;
@@ -13,9 +13,9 @@ public class Player : MonoBehaviour {
     private float gravity = 30f;
     private Vector3 moveDir = Vector3.zero;
      
-
     private AudioSource source;
 
+	public static int sparks = 3;
 
     void Start()
     {
@@ -59,9 +59,8 @@ public class Player : MonoBehaviour {
 
     void OnTriggerEnter(Collider col)
     {
-        if (col.gameObject.tag == "Finish")
-        {
-            Application.Quit();
-        }
+		if (col.gameObject.tag == "Finish") {
+			Application.Quit ();
+		} 
     }
 }
