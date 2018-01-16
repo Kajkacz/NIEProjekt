@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 2
   tags:
   - Sunlight
+  - Story
   layers:
   - Default
   - TransparentFX

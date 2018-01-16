@@ -10,6 +10,7 @@ public class Enemy : MonoBehaviour {
 	public float speed = 1;
 	public float turnSpeed = 90;
 
+
 	public Light coneOfSight;
 	public float ViewDistance;
     public AudioClip found;

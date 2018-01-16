@@ -21,9 +21,8 @@ public class Fire : MonoBehaviour {
 				source.PlayOneShot (found, 1F);
 				audioTimeStamp = Time.time + found.length;
 			}
-			if (Input.GetButton ("Fire1") && Player.sparks > 0) {
-				Player.sparks--;
-				Instantiate (firePrefab, this.transform);
+			if (Input.GetButton ("Fire1") && Player.sparks) {
+				Instantiate (firePrefab, new Vector3(transform.position.x, transform.position.y-0.7f, transform.position.z), Quaternion.identity);
 				Destroy (this);
 			}
 		}	

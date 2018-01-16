@@ -10,12 +10,13 @@ public class EnemyWithTrail : MonoBehaviour
     public Transform pathHolder;
     public bool isClosedPath;
 	public float waitTime;
-	public float followTime;
+	public float volumeUp;
 
     public Light coneOfSight;
     public float ViewDistance;
     public AudioClip found;
     float viewAngle;
+
 
     private GameObject player;
 	private Vector3[] waypoints;
@@ -25,7 +26,6 @@ public class EnemyWithTrail : MonoBehaviour
     private ParticleSystem particle;
     private AudioSource source;
     static float audioTimeStamp;
-	private float oldSpeed;
 	private enum state {PATROL, ATTACK};
 	private state currentState;
     void Start()
@@ -43,7 +43,6 @@ public class EnemyWithTrail : MonoBehaviour
 
 		agent = GetComponent<NavMeshAgent>();
 		agent.autoBraking = false;
-		oldSpeed = agent.speed;
 
 		transform.position = waypoints[0];
 		transform.forward = waypoints[1];
@@ -66,19 +65,18 @@ public class EnemyWithTrail : MonoBehaviour
 				if (Spotted ()) {
 					currentState = state.ATTACK;
 					agent.destination = player.transform.position;
-					agent.speed = oldSpeed * 5;
-					agent.angularSpeed = 360;
+					agent.speed *= 5;
+					source.volume *= volumeUp;
+					source.maxDistance *= volumeUp;
+					source.PlayOneShot (found, 1F);
 					coneOfSight.color = Color.red;
 					if (audioTimeStamp <= Time.time) {
-						source.PlayOneShot (found, 1F);
+						//source.PlayOneShot (found, 1F);
 						audioTimeStamp = Time.time + found.length;
 					}
 				} else if (!agent.pathPending && agent.remainingDistance < 0.5f) {
 					patrol ();
-					agent.speed = oldSpeed;
 				}
-				else
-					agent.speed = oldSpeed;
 				break;
 			}
 		case state.ATTACK:
@@ -88,6 +86,7 @@ public class EnemyWithTrail : MonoBehaviour
 				{
 					if (agent.remainingDistance <= agent.stoppingDistance)
 					{
+						StorySpark.quitting = true;
 							SceneManager.LoadScene (SceneManager.GetActiveScene().name);
 
 					}
@@ -171,6 +170,9 @@ public class EnemyWithTrail : MonoBehaviour
 		{
 			if (currentState == state.ATTACK) {
 				agent.destination = waypoints [destinationPoint];
+				agent.speed /= 5;
+				source.volume /= volumeUp;
+				source.maxDistance /= volumeUp;
 				currentState = state.PATROL;
 			}
 		}

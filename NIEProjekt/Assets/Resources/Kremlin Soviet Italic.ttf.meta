@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 3271de57bad2c90439d7897f4eaaacd5
+timeCreated: 1515502570
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Kremlin Soviet Italic
+  fontNames:
+  - Kremlin Soviet Italic
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

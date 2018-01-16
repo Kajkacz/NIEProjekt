@@ -4,28 +4,31 @@ using UnityEngine;
 
 //[RequireComponent(typeof(CharacterController))]
 public class Player : MonoBehaviour {
-
+	
     public float speed = 10f;
-    public AudioClip gameplayMusic;
+    public AudioClip gameStartSound;
 
     private CharacterController controller;
     private float jumpForce = 8f;
     private float gravity = 30f;
     private Vector3 moveDir = Vector3.zero;
-     
+	public Light lt;
     private AudioSource source;
 
-	public static int sparks = 3;
+	public static bool sparks = true;
+	public GameObject sparkPrefab;
+	public float lightFade;
 
     void Start()
     {
+		sparks = true;
        controller = gameObject.GetComponent<CharacterController>();
     }
 
     void Awake()
     {
         source = GetComponent<AudioSource>();
-        source.PlayOneShot(gameplayMusic, 1F);
+        source.PlayOneShot(gameStartSound, 1F);
         
     }
 
@@ -51,7 +54,11 @@ public class Player : MonoBehaviour {
             moveDir.y -= gravity * Time.deltaTime;
             controller.Move(moveDir * Time.deltaTime);
 
-
+		if (Input.GetButton ("Fire1") && Player.sparks) {
+			sparks = false;
+			lt.intensity *= lightFade;
+			Instantiate (sparkPrefab,new Vector3(transform.position.x, transform.position.y-0.7f, transform.position.z), Quaternion.identity);
+		}
         if (Input.GetKey("escape"))
             Application.Quit();
 
@@ -61,6 +68,13 @@ public class Player : MonoBehaviour {
     {
 		if (col.gameObject.tag == "Finish") {
 			Application.Quit ();
-		} 
+		} else if (col.gameObject.tag == "Story") {
+			if (!sparks) {
+				sparks = true;
+				lt.intensity /= lightFade;
+			}
+			Destroy (col.gameObject);
+			Debug.Log ("A");
+		}
     }
 }
